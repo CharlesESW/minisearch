@@ -52,7 +52,7 @@ def extract_content(url):
                 pdf_reader = PdfReader(BytesIO(r.content))
                 content = " ".join(page.extract_text() or "" for page in pdf_reader.pages)
                 title = url.split('/')[-1]
-            except Exception as e:
+            except PyPDF2.PdfReadError as e:
                 print(f"Failed to parse PDF {url}: {e}")
                 return None
         else:
@@ -70,7 +70,7 @@ def extract_content(url):
             "content": content,
             "domain": domain
         }
-    except Exception as e:
+    except requests.exceptions.RequestException as e:
         print(f"Failed {url}: {e}")
         return None
 
@@ -80,7 +80,8 @@ def crawl(seed_url, max_depth=3):
     domain = urlparse(seed_url).netloc
     docs = []
 
-    disallowed_extensions = ('.xml', '.atom', '.png', '.json', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.bmp', '.ico')
+    disallowed_extensions = ('.xml', '.atom', '.png', '.json', '.jpg', '.jpeg',
+                             '.gif', '.svg', '.webp', '.bmp', '.ico')
 
     while queue:
         url, depth = queue.pop(0)
@@ -129,7 +130,7 @@ def reset_collection():
     try:
         client.collections['webpages'].delete()
         print("deleted.")
-    except Exception as e:
+    except typesense.objects.ObjectNotFound as e:
         print("does not exist", e)
     create_schema()
 
