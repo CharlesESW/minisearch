@@ -1,14 +1,16 @@
-name: Format HTML
+name: Format and Validate HTML
 on: [push, pull_request]
 
 jobs:
-  format:
+  format-and-validate:
     runs-on: ubuntu-latest
     steps:
+      # Setup
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+      # Prettier Formatting
       - name: Install Prettier
         run: npm install -g prettier
       - name: Check Formatting
@@ -16,6 +18,20 @@ jobs:
         continue-on-error: true
       - name: Fix Formatting
         run: prettier --write "**/*.html"
+      # W3C Validation
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Download W3C Validator
+        run: |
+          wget -q https://validator.github.io/validator/current/build/dist/vnu.jar
+          chmod a+x vnu.jar
+      - name: Validate HTML
+        run: |
+          java -jar vnu.jar --errors-only --skip-non-html "**/*.html"
+      # Commit Changes (if formatting fixed anything)
       - name: Commit Changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
