@@ -1,0 +1,5 @@
+.env
+frontend/env.js
+venv/
+typesense-data/
+typesense-date/
