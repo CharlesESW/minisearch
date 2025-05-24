@@ -13,6 +13,7 @@ jobs:
         run: npm install -g prettier
       - name: Check Formatting
         run: prettier --check "**/*.html"
+        continue-on-error: true
       - name: Fix Formatting
         run: prettier --write "**/*.html"
       - name: Commit Changes
