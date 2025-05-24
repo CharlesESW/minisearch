@@ -1,139 +1,147 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Charlie's Totally Reliable WebSearch</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/instantsearch.css@7/themes/algolia-min.css" />
-  <style>
-    body {
-      background-color: #aed0f2;
-      color: #2A1E5C;
-      font-family: Arial, sans-serif;
-      margin: 40px;
-    }
-    .ais-SearchBox {
-      margin-bottom: 20px;
-    }
-    .hit {
-      color: #2A1E5C;
-      border: 2px solid #6C091F;
-      padding: 10px;
-      margin-bottom: 10px;
-      border-radius: 4px;
-      word-wrap: break-word;
-      max-width: 100%;
-      box-sizing: border-box;
-    }
-    .hit-title, .hit-url {
-      white-space: normal;
-      word-break: break-word;
-      display: block;
-    }
-    .hit-url a {
-      color: #000;
-      word-break: break-all;
-      display: inline-block;
-      max-width: 100%;
-    }
-    .ais-Hits-item {
-      border: none;
-      box-shadow: none;
-      background: transparent;
-      padding: 10;
-      margin: 0;
-    }
-    .hit-title {
-      font-weight: bold;
-      font-size: 1.1em;
-      color: #6C091F;
-    }
-    .hit-url {
-      font-size: 0.9em;
-      color: #666;
-    }
-
-    #custom-results {
-      display: none;
-    }
-  </style>
-</head>
-<body>
-  <h1>Search My Pages</h1>
-
-  <div id="searchbox"></div>
-  <div id="custom-results"></div>
-  <div id="hits"></div>
-
-  <!-- env.js must come first -->
-  <script src="env.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/instantsearch.js@4"></script>
-  <script src="https://cdn.jsdelivr.net/npm/typesense-instantsearch-adapter@2.4.0/dist/typesense-instantsearch-adapter.min.js"></script>
-  <script>
-    const typesenseInstantsearchAdapter = new TypesenseInstantSearchAdapter({
-      server: {
-        apiKey: window.ENV.TYPESENSE_API_KEY,
-        nodes: [{
-          host: window.ENV.TYPESENSE_HOST,
-          port: window.ENV.TYPESENSE_PORT,
-          protocol: window.ENV.TYPESENSE_PROTOCOL
-        }],
-      },
-      additionalSearchParameters: {
-        query_by: 'title,content'
+  <head>
+    <meta charset="UTF-8" />
+    <title>Charlie's Totally Reliable WebSearch</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/instantsearch.css@7/themes/algolia-min.css"
+    />
+    <style>
+      body {
+        background-color: #aed0f2;
+        color: #2a1e5c;
+        font-family: Arial, sans-serif;
+        margin: 40px;
       }
-    });
+      .ais-SearchBox {
+        margin-bottom: 20px;
+      }
+      .hit {
+        color: #2a1e5c;
+        border: 2px solid #6c091f;
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 4px;
+        word-wrap: break-word;
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+      .hit-title,
+      .hit-url {
+        white-space: normal;
+        word-break: break-word;
+        display: block;
+      }
+      .hit-url a {
+        color: #000;
+        word-break: break-all;
+        display: inline-block;
+        max-width: 100%;
+      }
+      .ais-Hits-item {
+        border: none;
+        box-shadow: none;
+        background: transparent;
+        padding: 10;
+        margin: 0;
+      }
+      .hit-title {
+        font-weight: bold;
+        font-size: 1.1em;
+        color: #6c091f;
+      }
+      .hit-url {
+        font-size: 0.9em;
+        color: #666;
+      }
 
-    const searchClient = typesenseInstantsearchAdapter.searchClient;
+      #custom-results {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Search My Pages</h1>
 
-    const search = instantsearch({
-      indexName: 'webpages',
-      searchClient,
-    });
+    <div id="searchbox"></div>
+    <div id="custom-results"></div>
+    <div id="hits"></div>
 
-    search.addWidgets([
-      instantsearch.widgets.configure({ hitsPerPage: 48 }),
-      instantsearch.widgets.searchBox({
-        container: '#searchbox',
-        placeholder: 'Search sites...',
-      }),
-      instantsearch.widgets.hits({
-        container: '#hits',
-        templates: {
-          item(hit) {
-            return `
+    <!-- env.js must come first -->
+    <script src="env.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/instantsearch.js@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/typesense-instantsearch-adapter@2.4.0/dist/typesense-instantsearch-adapter.min.js"></script>
+    <script>
+      const typesenseInstantsearchAdapter = new TypesenseInstantSearchAdapter({
+        server: {
+          apiKey: window.ENV.TYPESENSE_API_KEY,
+          nodes: [
+            {
+              host: window.ENV.TYPESENSE_HOST,
+              port: window.ENV.TYPESENSE_PORT,
+              protocol: window.ENV.TYPESENSE_PROTOCOL,
+            },
+          ],
+        },
+        additionalSearchParameters: {
+          query_by: "title,content",
+        },
+      });
+
+      const searchClient = typesenseInstantsearchAdapter.searchClient;
+
+      const search = instantsearch({
+        indexName: "webpages",
+        searchClient,
+      });
+
+      search.addWidgets([
+        instantsearch.widgets.configure({ hitsPerPage: 48 }),
+        instantsearch.widgets.searchBox({
+          container: "#searchbox",
+          placeholder: "Search sites...",
+        }),
+        instantsearch.widgets.hits({
+          container: "#hits",
+          templates: {
+            item(hit) {
+              return `
               <div class="hit">
                 <div class="hit-title">${hit.title}</div>
                 <div class="hit-url"><a href="${hit.url}" target="_blank">${hit.url}</a></div>
-                <div>${hit.content?.slice(0, 200) ?? ''}...</div>
+                <div>${hit.content?.slice(0, 200) ?? ""}...</div>
               </div>
             `;
-          }
-        }
-      })
-    ]);
+            },
+          },
+        }),
+      ]);
 
-    search.on('render', () => {
-      const query = search.helper.state.query.trim();
-      const hitsContainer = document.querySelector('#hits');
-      const customContainer = document.querySelector('#custom-results');
+      search.on("render", () => {
+        const query = search.helper.state.query.trim();
+        const hitsContainer = document.querySelector("#hits");
+        const customContainer = document.querySelector("#custom-results");
 
-      if (query === '') {
-        hitsContainer.style.display = 'none';
-        customContainer.innerHTML = window.ENV.BASE_DOMAINS.map(hit => `
+        if (query === "") {
+          hitsContainer.style.display = "none";
+          customContainer.innerHTML = window.ENV.BASE_DOMAINS.map(
+            (hit) => `
           <div class="hit">
             <div class="hit-title">${hit.title}</div>
             <div class="hit-url"><a href="${hit.url}" target="_blank">${hit.url}</a></div>
             <div>${hit.content}</div>
           </div>
-        `).join('');
-        customContainer.style.display = 'block';
-      } else {
-        hitsContainer.style.display = 'block';
-        customContainer.style.display = 'none';
-      }
-    });
+        `,
+          ).join("");
+          customContainer.style.display = "block";
+        } else {
+          hitsContainer.style.display = "block";
+          customContainer.style.display = "none";
+        }
+      });
 
-    search.start();
-  </script>
-</body>
+      search.start();
+    </script>
+  </body>
 </html>
