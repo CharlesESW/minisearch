@@ -1,11 +1,11 @@
 import os
+from io import BytesIO
+from urllib.parse import urlparse, urljoin
 from dotenv import load_dotenv
 import requests
 from bs4 import BeautifulSoup
-from urllib.parse import urlparse, urljoin
 import typesense
 from PyPDF2 import PdfReader
-from io import BytesIO
 
 load_dotenv()
 
