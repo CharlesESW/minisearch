@@ -1,0 +1,6 @@
+python-dotenv
+requests
+bs4
+parse
+typesense
+pypdf2
