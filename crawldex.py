@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 import requests
 from bs4 import BeautifulSoup
 import typesense
-from PyPDF2 import PdfReader
+from PyPDF2 import PdfReader, errors
 
 load_dotenv()
 
@@ -52,7 +52,7 @@ def extract_content(url):
                 pdf_reader = PdfReader(BytesIO(r.content))
                 content = " ".join(page.extract_text() or "" for page in pdf_reader.pages)
                 title = url.split('/')[-1]
-            except PyPDF2.PdfReadError as e:
+            except errors.PdfReadError as e:
                 print(f"Failed to parse PDF {url}: {e}")
                 return None
         else:
@@ -78,7 +78,7 @@ def crawl(seed_url, max_depth=3):
     visited = set()
     queue = [(seed_url.rstrip('/'), 0)]
     domain = urlparse(seed_url).netloc
-    docs = []
+    crawled_docs = []
 
     disallowed_extensions = ('.xml', '.atom', '.png', '.json', '.jpg', '.jpeg',
                              '.gif', '.svg', '.webp', '.bmp', '.ico')
@@ -93,7 +93,7 @@ def crawl(seed_url, max_depth=3):
         print(f"Crawling: {base_url}")
         doc = extract_content(base_url)
         if doc:
-            docs.append(doc)
+            crawled_docs.append(doc)
 
         try:
             r = requests.get(base_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10)
@@ -117,7 +117,7 @@ def crawl(seed_url, max_depth=3):
         except:
             continue
 
-    return docs
+    return crawled_docs
 
 def index_documents(docs):
     if not docs:
