@@ -1,3 +1,8 @@
+"""
+Crawldexer for typesense search engine
+
+This module crawls through a defined list of domains in .env and then indexes the contents.
+"""
 import os
 from io import BytesIO
 from urllib.parse import urlparse, urljoin
@@ -20,6 +25,7 @@ client = typesense.Client({
 })
 
 def create_schema():
+    """This creates the database for the scraped data """
     try:
         client.collections.create({
             "name": "webpages",
@@ -32,10 +38,11 @@ def create_schema():
             ]
         })
         print("Collection schema created.")
-    except ObjectAlreadyExists:
+    except typesense.exceptions.ObjectAlreadyExists:
         print("Schema creation already exists")
 
 def extract_content(url):
+    """This extracts the contents of a given url"""
     try:
         if url.startswith("mailto:") or url.startswith("javascript:"):
             return None
@@ -75,10 +82,9 @@ def extract_content(url):
         return None
 
 def crawl(seed_url, max_depth=3):
-    """Crawl website starting from seed URL up to specified depth."""
-    DISALLOWED_EXT = ('.xml', '.atom', '.png', '.json', '.jpg', '.jpeg',
+    """This will crawl website starting from seed URL up to specified depth."""
+    banned_extensions = ('.xml', '.atom', '.png', '.json', '.jpg', '.jpeg',
                      '.gif', '.svg', '.webp', '.bmp', '.ico')
-    USER_AGENT = {'User-Agent': 'Mozilla/5.0'}
 
     state = {
         'visited': set(),
@@ -101,7 +107,7 @@ def crawl(seed_url, max_depth=3):
             state['docs'].append(doc)
 
         try:
-            response = requests.get(base_url, headers=USER_AGENT, timeout=10)
+            response = requests.get(base_url, headers={'User-Agent' : 'Mozilla/5.0'}, timeout=10)
             soup = BeautifulSoup(response.text, 'html.parser')
 
             for link in soup.find_all('a', href=True):
@@ -110,7 +116,7 @@ def crawl(seed_url, max_depth=3):
                 parsed = urlparse(abs_url)
 
                 if not (href.startswith(('mailto:', 'javascript:'))) \
-                   and not abs_url.lower().endswith(DISALLOWED_EXT) \
+                   and not abs_url.lower().endswith(banned_extensions) \
                    and "/cdn-cgi/l/email-protection" not in abs_url \
                    and parsed.scheme in ('http', 'https') \
                    and parsed.netloc == state['domain']:
@@ -122,6 +128,7 @@ def crawl(seed_url, max_depth=3):
     return state['docs']
 
 def index_documents(docs_to_index):
+    """This will add the gotten docs from crawling to the typesense collection"""
     if not docs_to_index:
         print("Nothing to index.")
         return
@@ -129,6 +136,10 @@ def index_documents(docs_to_index):
     client.collections['webpages'].documents.import_(docs_to_index, {'action': 'upsert'})
 
 def reset_collection():
+    """
+    This deletes everything from the collection so it can be clean readded
+    Can probably removed when i trust it enough as well as the creation one
+    """
     try:
         client.collections['webpages'].delete()
         print("deleted.")
