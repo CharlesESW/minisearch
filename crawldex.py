@@ -32,8 +32,8 @@ def create_schema():
             ]
         })
         print("Collection schema created.")
-    except Exception as e:
-        print("Schema creation skipped or already exists:", e)
+    except ObjectAlreadyExists:
+        print("Schema creation already exists")
 
 def extract_content(url):
     try:
@@ -75,56 +75,58 @@ def extract_content(url):
         return None
 
 def crawl(seed_url, max_depth=3):
-    visited = set()
-    queue = [(seed_url.rstrip('/'), 0)]
-    domain = urlparse(seed_url).netloc
-    crawled_docs = []
+    """Crawl website starting from seed URL up to specified depth."""
+    DISALLOWED_EXT = ('.xml', '.atom', '.png', '.json', '.jpg', '.jpeg',
+                     '.gif', '.svg', '.webp', '.bmp', '.ico')
+    USER_AGENT = {'User-Agent': 'Mozilla/5.0'}
 
-    disallowed_extensions = ('.xml', '.atom', '.png', '.json', '.jpg', '.jpeg',
-                             '.gif', '.svg', '.webp', '.bmp', '.ico')
+    state = {
+        'visited': set(),
+        'docs': [],
+        'domain': urlparse(seed_url).netloc
+    }
+    queue = [(seed_url.rstrip('/'), 0)]
 
     while queue:
         url, depth = queue.pop(0)
         base_url = url.split('#')[0].split('?')[0]
-        if base_url in visited or depth > max_depth:
+
+        if base_url in state['visited'] or depth > max_depth:
             continue
 
-        visited.add(base_url)
+        state['visited'].add(base_url)
         print(f"Crawling: {base_url}")
-        doc = extract_content(base_url)
-        if doc:
-            crawled_docs.append(doc)
+
+        if (doc := extract_content(base_url)):
+            state['docs'].append(doc)
 
         try:
-            r = requests.get(base_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10)
-            soup = BeautifulSoup(r.text, 'html.parser')
+            response = requests.get(base_url, headers=USER_AGENT, timeout=10)
+            soup = BeautifulSoup(response.text, 'html.parser')
+
             for link in soup.find_all('a', href=True):
                 href = link['href'].strip()
-                if href.startswith(('mailto:', 'javascript:')):
-                    continue
-
                 abs_url = urljoin(base_url, href).split('#')[0].rstrip('/')
-
-                if abs_url.lower().endswith(disallowed_extensions):
-                    continue
-
-                if "/cdn-cgi/l/email-protection" in abs_url:
-                    continue
-
                 parsed = urlparse(abs_url)
-                if parsed.scheme in ('http', 'https') and parsed.netloc == domain:
+
+                if not (href.startswith(('mailto:', 'javascript:'))) \
+                   and not abs_url.lower().endswith(DISALLOWED_EXT) \
+                   and "/cdn-cgi/l/email-protection" not in abs_url \
+                   and parsed.scheme in ('http', 'https') \
+                   and parsed.netloc == state['domain']:
                     queue.append((abs_url, depth + 1))
-        except:
+
+        except requests.exceptions.RequestException:
             continue
 
-    return crawled_docs
+    return state['docs']
 
-def index_documents(docs):
-    if not docs:
+def index_documents(docs_to_index):
+    if not docs_to_index:
         print("Nothing to index.")
         return
-    print(f"Indexing {len(docs)} documents...")
-    client.collections['webpages'].documents.import_(docs, {'action': 'upsert'})
+    print(f"Indexing {len(docs_to_index)} documents...")
+    client.collections['webpages'].documents.import_(docs_to_index, {'action': 'upsert'})
 
 def reset_collection():
     try:
@@ -141,7 +143,7 @@ if __name__ == "__main__":
 
     for seed in seeds:
         print(f"Crawling: {urlparse(seed).netloc}")
-        docs = crawl(seed)
-        index_documents(docs)
+        done_docs = crawl(seed)
+        index_documents(done_docs)
 
     print("Done crawldexing.")
