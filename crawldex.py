@@ -130,7 +130,7 @@ def reset_collection():
     try:
         client.collections['webpages'].delete()
         print("deleted.")
-    except typesense.objects.ObjectNotFound as e:
+    except typesense.exceptions.ObjectNotFound as e:
         print("does not exist", e)
     create_schema()
 
