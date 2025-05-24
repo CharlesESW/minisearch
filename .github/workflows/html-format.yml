@@ -1,34 +1,37 @@
 name: Format and Validate HTML
 on: [push, pull_request]
+
 jobs:
-  format-and-validate:
+  html-check:
     runs-on: ubuntu-latest
     steps:
+      # Checkout code
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Required for git-auto-commit-action
+          fetch-depth: 0  # Needed for git-auto-commit
 
-      # 1. Setup Node.js for Prettier
+      # Setup Node for Prettier
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
-      # 2. Install and run Prettier
+          node-version: '20'
+
+      # Prettier formatting
       - name: Install Prettier
         run: npm install -g prettier
-      - name: Check Formatting
+      - name: Check formatting
         run: prettier --check "**/*.html"
         continue-on-error: true
-      - name: Fix Formatting
+      - name: Fix formatting
         run: prettier --write "**/*.html"
-      # 3. W3C Validation
+
+      # W3C Validation
       - name: Validate HTML
-        uses: docker://validator/validator:latest
+        uses: docker://ghcr.io/validator/validator:latest
         with:
           args: --errors-only --skip-non-html "**/*.html"
-      # 4. Commit formatting changes
-      - name: Commit Changes
+
+      # Commit formatting changes
+      - name: Commit changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "style: Auto-format HTML"
-          # Uncomment below if you get permission errors:
-          # token: ${{ secrets.GITHUB_TOKEN }}
