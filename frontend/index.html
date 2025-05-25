@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Charlie's Totally Reliable WebSearch</title>
+    <title>Charlie's MiniSearch 2.0</title>
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/instantsearch.css@7/themes/algolia-min.css"
@@ -15,60 +15,236 @@
         margin: 40px;
       }
       .ais-SearchBox {
-        margin-bottom: 20px;
+        margin-bottom: 30px;
       }
+      .search-container {
+        display: flex;
+        gap: 30px;
+        margin-top: 20px;
+        flex-wrap: wrap;
+      }
+      .search-container.hide-facets #facets,
+      .search-container.hide-facets #pagination,
+      .search-container.hide-facets #sort-by {
+        display: none;
+      }
+      .search-container.no-results #facets,
+      .search-container.no-results #pagination,
+      .search-container.no-results #sort-by {
+        display: none;
+      }
+      #facets {
+        flex: 0 0 250px;
+        margin-right: 10px;
+      }
+      #results {
+        flex: 1;
+        margin-left: 10px;
+      }
+      #sort-by {
+        margin-bottom: 25px;
+      }
+      /* Hits container grid layout */
+      #hits {
+        display: grid;
+        gap: 20px;
+        grid-template-columns: 1fr;
+      }
+      
       .hit {
         color: #2a1e5c;
         border: 2px solid #6c091f;
-        padding: 10px;
-        margin-bottom: 10px;
-        border-radius: 4px;
+        padding: 20px;
+        border-radius: 6px;
+        background-color: white;
         word-wrap: break-word;
-        max-width: 100%;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        width: 100%;
         box-sizing: border-box;
+        margin-bottom: 0;
       }
-      .hit-title,
+
+      }
+      .hit-meta {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        margin-bottom: 10px;
+        font-size: 0.9em;
+      }
+      .hit-domain {
+        font-weight: bold;
+        color: #6c091f;
+      }
+      .pdf-badge {
+        background: #6c091f;
+        color: white;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 0.8em;
+      }
+      .hit-title {
+        font-weight: bold;
+        font-size: 1.2em;
+        color: #2a1e5c;
+        margin-bottom: 8px;
+      }
       .hit-url {
-        white-space: normal;
-        word-break: break-word;
-        display: block;
+        font-size: 0.9em;
+        color: #666;
+        margin-bottom: 12px;
+        word-break: break-all;
       }
       .hit-url a {
-        color: #000;
-        word-break: break-all;
-        display: inline-block;
-        max-width: 100%;
+        color: #2a1e5c;
+        text-decoration: none;
+      }
+      .hit-url a:hover {
+        text-decoration: underline;
+      }
+      .hit-snippet {
+        line-height: 1.6;
+        font-size: 0.95em;
+        color: #444;
+        margin-top: 12px;
+        padding: 12px;
+        background-color: #f8f9fa;
+        border-left: 3px solid #6c091f;
+        border-radius: 0 4px 4px 0;
+      }
+      .hit-snippet em {
+        font-style: normal;
+        background-color: #ffeb3b;
+        padding: 2px 4px;
+        border-radius: 2px;
+        font-weight: bold;
+        color: #2a1e5c;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      }
+      .snippet-label {
+        font-size: 0.8em;
+        color: #666;
+        font-weight: bold;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
       }
       .ais-Hits-item {
         border: none;
         box-shadow: none;
         background: transparent;
-        padding: 10;
+        padding: 0;
         margin: 0;
+        width: 100%;
       }
-      .hit-title {
+      .ais-Pagination {
+        margin-top: 40px;
+        text-align: center;
+      }
+      .ais-Pagination-item {
+        display: inline-block;
+        margin: 0 8px;
+      }
+      .ais-Pagination-link {
+        padding: 8px 12px;
+        border: 1px solid #6c091f;
+        border-radius: 3px;
+        color: #2a1e5c;
+        text-decoration: none;
+      }
+      .ais-Pagination-link:hover {
+        background-color: #6c091f;
+        color: white;
+      }
+      .ais-Pagination-item--selected .ais-Pagination-link {
+        background-color: #6c091f;
+        color: white;
         font-weight: bold;
-        font-size: 1.1em;
-        color: #6c091f;
       }
-      .hit-url {
-        font-size: 0.9em;
-        color: #666;
+      .ais-RefinementList-item {
+        margin-bottom: 8px;
       }
-
+      .ais-RefinementList-labelText {
+        word-break: break-word;
+      }
+      #domain-facet {
+        margin-bottom: 25px;
+      }
+      #type-facet {
+        margin-top: 10px;
+      }
+      .ais-SortBy-select {
+        padding: 8px 12px;
+        border: 2px solid #6c091f;
+        border-radius: 4px;
+        background-color: white;
+        color: #2a1e5c;
+        font-size: 0.95em;
+      }
       #custom-results {
         display: none;
+        margin-top: 20px;
+      }
+      .no-results {
+        text-align: center;
+        padding: 40px 20px;
+        color: #666;
+      }
+      .no-results p {
+        margin: 10px 0;
+        font-size: 1.1em;
+      }
+
+      /* Mobile adjustments */
+      @media (max-width: 768px) {
+        body {
+          margin: 20px;
+        }
+        
+        .search-container {
+          flex-direction: column;
+        }
+
+        #facets,
+        #results {
+          margin: 0;
+        }
+
+        .hit {
+          width: 100%;
+          margin-bottom: 15px;
+        }
+        
+        /* Ensure single column on mobile */
+        #hits {
+          display: block !important;
+        }
       }
     </style>
   </head>
   <body>
-    <h1>Search My Pages</h1>
+    <h1>Charlie's Minisearch 2.0</h1>
 
     <div id="searchbox"></div>
-    <div id="custom-results"></div>
-    <div id="hits"></div>
+    
+    <div class="search-container hide-facets">
+      <div id="facets">
+        <div id="domain-facet"></div>
+        <div>
+          <strong>Is PDF?</strong>
+          <div id="type-facet"></div>
+        </div>
+      </div>
+      
+      <div id="results">
+        <div id="sort-by"></div>
+        <div id="hits"></div>
+        <div id="pagination"></div>
+      </div>
+    </div>
 
-    <!-- env.js must come first -->
+    <div id="custom-results"></div>
+
     <script src="env.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/instantsearch.js@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/typesense-instantsearch-adapter@2.4.0/dist/typesense-instantsearch-adapter.min.js"></script>
@@ -85,7 +261,15 @@
           ],
         },
         additionalSearchParameters: {
-          query_by: "title,content",
+          query_by: "title,content,headers,keywords",
+          sort_by: "_text_match:desc,popularity:desc,word_count:desc",
+          prioritize_exact_match: true,
+          prioritize_token_position: true,
+          exclude_fields: "id",
+          highlight_affix_num_tokens: 10,
+          snippet: "content:40",
+          snippet_threshold: 1,
+          snippet_ellipsis_text: "..."
         },
       });
 
@@ -97,24 +281,76 @@
       });
 
       search.addWidgets([
-        instantsearch.widgets.configure({ hitsPerPage: 48 }),
+        instantsearch.widgets.configure({ hitsPerPage: 12 }),
         instantsearch.widgets.searchBox({
           container: "#searchbox",
-          placeholder: "Search sites...",
+          placeholder: "Search across all sites...",
+          showSubmit: true,
+          showReset: true,
+        }),
+        instantsearch.widgets.sortBy({
+          container: "#sort-by",
+          items: [
+            { label: "Relevance", value: "webpages" },
+            { label: "Popular First", value: "webpages/sort/popularity:desc" },
+            { label: "Longest First", value: "webpages/sort/word_count:desc" },
+          ],
+        }),
+        instantsearch.widgets.refinementList({
+          container: "#domain-facet",
+          attribute: "domain",
+          searchable: true,
+          searchablePlaceholder: "Search domains...",
+          showMore: true,
+          limit: 5,
+          sortBy: ["count:desc"],
+        }),
+        instantsearch.widgets.refinementList({
+          container: "#type-facet",
+          attribute: "is_pdf",
+          transformItems: items => items.map(item => ({
+            ...item,
+            label: item.label === "true" ? "PDF" : "Web Page"
+          })),
         }),
         instantsearch.widgets.hits({
           container: "#hits",
           templates: {
             item(hit) {
+              const domain = hit.domain;
+              const isPDF = hit.is_pdf ? '<span class="pdf-badge">PDF</span>' : '';
+              const snippet = hit._snippetResult?.content?.value || '';
+
               return `
-              <div class="hit">
-                <div class="hit-title">${hit.title}</div>
-                <div class="hit-url"><a href="${hit.url}" target="_blank">${hit.url}</a></div>
-                <div>${hit.content?.slice(0, 200) ?? ""}...</div>
-              </div>
-            `;
+                <div class="hit">
+                  <div class="hit-meta">
+                    <span class="hit-domain">${domain}</span>
+                    ${isPDF}
+                  </div>
+                  <div class="hit-title">${hit._highlightResult?.title?.value || hit.title}</div>
+                  <div class="hit-url"><a href="${hit.url}" target="_blank">${hit.url}</a></div>
+                  ${snippet ? `
+                    <div class="hit-snippet">
+                      <div class="snippet-label">Relevant excerpt:</div>
+                      ${snippet}
+                    </div>
+                  ` : ''}
+                </div>
+              `;
             },
+            empty: `
+              <div class="no-results">
+                <p>No results found for your query.</p>
+                <p>Try different keywords or check your spelling.</p>
+              </div>
+            `,
           },
+        }),
+        instantsearch.widgets.pagination({
+          container: "#pagination",
+          padding: 2,
+          showFirst: false,
+          showLast: false,
         }),
       ]);
 
@@ -122,22 +358,36 @@
         const query = search.helper.state.query.trim();
         const hitsContainer = document.querySelector("#hits");
         const customContainer = document.querySelector("#custom-results");
+        const searchContainer = document.querySelector(".search-container");
+        
+        // Get the number of search results
+        const results = search.helper.lastResults;
+        const hasResults = results && results.nbHits > 0;
 
         if (query === "") {
           hitsContainer.style.display = "none";
           customContainer.innerHTML = window.ENV.BASE_DOMAINS.map(
             (hit) => `
-          <div class="hit">
-            <div class="hit-title">${hit.title}</div>
-            <div class="hit-url"><a href="${hit.url}" target="_blank">${hit.url}</a></div>
-            <div>${hit.content}</div>
-          </div>
-        `,
+              <div class="hit">
+                <div class="hit-title">${hit.title}</div>
+                <div class="hit-url"><a href="${hit.url}" target="_blank">${hit.url}</a></div>
+                <div>${hit.content}</div>
+              </div>
+            `
           ).join("");
           customContainer.style.display = "block";
+          searchContainer.classList.add("hide-facets");
         } else {
           hitsContainer.style.display = "block";
           customContainer.style.display = "none";
+          searchContainer.classList.remove("hide-facets");
+          
+          // Hide facets, sort, and pagination when there are no results
+          if (!hasResults) {
+            searchContainer.classList.add("no-results");
+          } else {
+            searchContainer.classList.remove("no-results");
+          }
         }
       });
 
