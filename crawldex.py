@@ -5,6 +5,7 @@ This module crawls through a defined list of domains in .env and then indexes th
 """
 import os
 from io import BytesIO
+import time
 from urllib.parse import urlparse, urljoin
 from dotenv import load_dotenv
 import requests
@@ -25,57 +26,107 @@ client = typesense.Client({
 })
 
 def create_schema():
-    """This creates the database for the scraped data """
+    """This creates the database for the scraped data"""
     try:
         client.collections.create({
             "name": "webpages",
             "fields": [
                 {"name": "id", "type": "string"},
                 {"name": "url", "type": "string"},
-                {"name": "title", "type": "string"},
+                {"name": "title", "type": "string", "sort": True},
                 {"name": "content", "type": "string"},
-                {"name": "domain", "type": "string", "facet": True}
-            ]
+                {"name": "domain", "type": "string", "facet": True},
+                {"name": "last_crawled", "type": "int64", "sort": True},
+                {"name": "path", "type": "string", "facet": True},
+                {"name": "word_count", "type": "int32", "sort": True},
+                {"name": "popularity", "type": "int32", "sort": True},
+                {"name": "headers", "type": "string[]", "optional": True},
+                {"name": "keywords", "type": "string[]", "optional": True},
+                {"name": "language", "type": "string", "facet": True},
+                {"name": "is_pdf", "type": "bool", "facet": True}
+            ],
+            "default_sorting_field": "popularity"
         })
         print("Collection schema created.")
     except typesense.exceptions.ObjectAlreadyExists:
-        print("Schema creation already exists")
+        print("Schema already exists")
 
 def extract_content(url):
     """This extracts the contents of a given url"""
     try:
-        if url.startswith("mailto:") or url.startswith("javascript:"):
+        if url.startswith(("mailto:", "javascript:")):
             return None
 
         headers = {'User-Agent': 'Mozilla/5.0'}
         r = requests.get(url, headers=headers, timeout=10)
+        r.raise_for_status()
 
         content_type = r.headers.get('Content-Type', '')
-        if 'application/rss+xml' in content_type or url.endswith('.xml'):
-            return None
+        domain = urlparse(url).netloc
+        path = urlparse(url).path
+        is_pdf = False
+        word_count = 0
+        doc_headers = []
+        meta_keywords = []
+        language = "en"
 
         if 'application/pdf' in content_type or url.endswith('.pdf'):
+            is_pdf = True
             try:
                 pdf_reader = PdfReader(BytesIO(r.content))
                 content = " ".join(page.extract_text() or "" for page in pdf_reader.pages)
                 title = url.split('/')[-1]
+                word_count = len(content.split())
             except errors.PdfReadError as e:
                 print(f"Failed to parse PDF {url}: {e}")
                 return None
         else:
             soup = BeautifulSoup(r.text, 'html.parser')
             title = soup.title.string.strip() if soup.title else url
-            for tag in soup(['script', 'style', 'nav', 'footer', 'header']):
-                tag.decompose()
-            content = soup.get_text(separator=' ', strip=True)
 
-        domain = urlparse(url).netloc
+
+            doc_headers = [h.get_text().strip() for h in soup.find_all(['h1', 'h2',
+                                                                        'h3', 'h4',
+                                                                        'h5', 'h6'])]
+
+
+            meta_keywords_tag = soup.find('meta', attrs={'name': 'keywords'})
+            if meta_keywords_tag:
+                meta_keywords = [kw.strip() for kw in meta_keywords_tag.get('content',
+                                                                            '').split(',')]
+            html_tag = soup.find('html')
+            if html_tag and html_tag.get('lang'):
+                language = html_tag.get('lang')[:2]
+
+            for tag in soup(['script', 'style', 'nav', 'footer', 'header', 'iframe', 'noscript']):
+                tag.decompose()
+
+            content = soup.get_text(separator=' ', strip=True)
+            word_count = len(content.split())
+
+        #temporary popularity score (not ready for pagerank yet)
+        popularity = 0
+        if "blog" in path.lower():
+            popularity += 1
+        if "about" in path.lower():
+            popularity += 1
+        if word_count > 500:
+            popularity += 1
+
         return {
             "id": f"{domain}:{url}",
             "url": url,
             "title": title,
             "content": content,
-            "domain": domain
+            "domain": domain,
+            "path": path,
+            "last_crawled": int(time.time()),
+            "word_count": word_count,
+            "popularity": popularity,
+            "headers": doc_headers,
+            "keywords": meta_keywords,
+            "language": language,
+            "is_pdf": is_pdf
         }
     except requests.exceptions.RequestException as e:
         print(f"Failed {url}: {e}")
@@ -84,7 +135,8 @@ def extract_content(url):
 def crawl(seed_url, max_depth=3):
     """This will crawl website starting from seed URL up to specified depth."""
     banned_extensions = ('.xml', '.atom', '.png', '.json', '.jpg', '.jpeg',
-                     '.gif', '.svg', '.webp', '.bmp', '.ico')
+                     '.gif', '.svg', '.webp', '.bmp', '.ico', '.zip', '.tar',
+                     '.gz', '.exe', '.dmg', '.mp3', '.mp4', '.avi', '.mov')
 
     state = {
         'visited': set(),
@@ -92,6 +144,17 @@ def crawl(seed_url, max_depth=3):
         'domain': urlparse(seed_url).netloc
     }
     queue = [(seed_url.rstrip('/'), 0)]
+
+
+    priority_urls = {
+        'index': 0,
+        'home': 0,
+        'about': 1,
+        'contact': 1,
+        'blog': 2,
+        'articles': 2,
+        'docs': 2
+    }
 
     while queue:
         url, depth = queue.pop(0)
@@ -103,24 +166,36 @@ def crawl(seed_url, max_depth=3):
         state['visited'].add(base_url)
         print(f"Crawling: {base_url}")
 
+        path = urlparse(base_url).path.lower()
+        priority = next((v for k, v in priority_urls.items() if k in path), 3)
+
         if (doc := extract_content(base_url)):
+            doc['popularity'] += (3 - priority)
             state['docs'].append(doc)
 
         try:
-            response = requests.get(base_url, headers={'User-Agent' : 'Mozilla/5.0'}, timeout=10)
+            response = requests.get(base_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10)
             soup = BeautifulSoup(response.text, 'html.parser')
 
+            links = []
             for link in soup.find_all('a', href=True):
                 href = link['href'].strip()
                 abs_url = urljoin(base_url, href).split('#')[0].rstrip('/')
                 parsed = urlparse(abs_url)
 
-                if not (href.startswith(('mailto:', 'javascript:'))) \
+                if (not href.startswith(('mailto:', 'javascript:'))) \
                    and not abs_url.lower().endswith(banned_extensions) \
                    and "/cdn-cgi/l/email-protection" not in abs_url \
                    and parsed.scheme in ('http', 'https') \
                    and parsed.netloc == state['domain']:
-                    queue.append((abs_url, depth + 1))
+
+
+                    path = parsed.path.lower()
+                    link_priority = next((v for k, v in priority_urls.items() if k in path), 3)
+                    links.append((abs_url, depth + 1, link_priority))
+
+            links.sort(key=lambda x: x[2])
+            queue.extend((url, d) for url, d, _ in links)
 
         except requests.exceptions.RequestException:
             continue
@@ -136,15 +211,12 @@ def index_documents(docs_to_index):
     client.collections['webpages'].documents.import_(docs_to_index, {'action': 'upsert'})
 
 def reset_collection():
-    """
-    This deletes everything from the collection so it can be clean readded
-    Can probably removed when i trust it enough as well as the creation one
-    """
+    """Delete and recreate the collection (won't be necessary once the schema stops changing)"""
     try:
         client.collections['webpages'].delete()
-        print("deleted.")
+        print("Collection deleted.")
     except typesense.exceptions.ObjectNotFound as e:
-        print("does not exist", e)
+        print("Collection does not exist", e)
     create_schema()
 
 if __name__ == "__main__":
@@ -157,4 +229,4 @@ if __name__ == "__main__":
         done_docs = crawl(seed)
         index_documents(done_docs)
 
-    print("Done crawldexing.")
+    print("Crawldexing completed successfully.")
