@@ -10,4 +10,4 @@ My first attempt at a small search engine, available at https://search.246802468
 8. once you've set those values you can then run 'bash serverrun.sh' and it will startup on whatever port I wrote in there where you can access it from. For this you will need the 'screen' package, its called that on apt good luck on other distros
 9. It should now work? i think that's all the setup steps but please let me know if it does not work
 
-feel free to contribute cos you might be able to tell the codebase is kinda dodgy and this might be useful to some people idk 
+feel free to contribute cos you might be able to tell the codebase is kinda dodgy and this might be useful to some people
