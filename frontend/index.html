@@ -50,7 +50,7 @@
         gap: 20px;
         grid-template-columns: 1fr;
       }
-      
+
       .hit {
         color: #2a1e5c;
         border: 2px solid #6c091f;
@@ -200,7 +200,7 @@
         body {
           margin: 20px;
         }
-        
+
         .search-container {
           flex-direction: column;
         }
@@ -214,7 +214,7 @@
           width: 100%;
           margin-bottom: 15px;
         }
-        
+
         /* Ensure single column on mobile */
         #hits {
           display: block !important;
@@ -226,7 +226,7 @@
     <h1>Charlie's Minisearch 2.0</h1>
 
     <div id="searchbox"></div>
-    
+
     <div class="search-container hide-facets">
       <div id="facets">
         <div id="domain-facet"></div>
@@ -235,7 +235,7 @@
           <div id="type-facet"></div>
         </div>
       </div>
-      
+
       <div id="results">
         <div id="sort-by"></div>
         <div id="hits"></div>
@@ -269,7 +269,7 @@
           highlight_affix_num_tokens: 10,
           snippet: "content:40",
           snippet_threshold: 1,
-          snippet_ellipsis_text: "..."
+          snippet_ellipsis_text: "...",
         },
       });
 
@@ -308,18 +308,19 @@
         instantsearch.widgets.refinementList({
           container: "#type-facet",
           attribute: "is_pdf",
-          transformItems: items => items.map(item => ({
-            ...item,
-            label: item.label === "true" ? "PDF" : "Web Page"
-          })),
+          transformItems: (items) =>
+            items.map((item) => ({
+              ...item,
+              label: item.label === "true" ? "PDF" : "Web Page",
+            })),
         }),
         instantsearch.widgets.hits({
           container: "#hits",
           templates: {
             item(hit) {
               const domain = hit.domain;
-              const isPDF = hit.is_pdf ? '<span class="pdf-badge">PDF</span>' : '';
-              const snippet = hit._snippetResult?.content?.value || '';
+              const isPDF = hit.is_pdf ? '<span class="pdf-badge">PDF</span>' : "";
+              const snippet = hit._snippetResult?.content?.value || "";
 
               return `
                 <div class="hit">
@@ -329,12 +330,16 @@
                   </div>
                   <div class="hit-title">${hit._highlightResult?.title?.value || hit.title}</div>
                   <div class="hit-url"><a href="${hit.url}" target="_blank">${hit.url}</a></div>
-                  ${snippet ? `
+                  ${
+                    snippet
+                      ? `
                     <div class="hit-snippet">
                       <div class="snippet-label">Relevant excerpt:</div>
                       ${snippet}
                     </div>
-                  ` : ''}
+                  `
+                      : ""
+                  }
                 </div>
               `;
             },
@@ -359,7 +364,7 @@
         const hitsContainer = document.querySelector("#hits");
         const customContainer = document.querySelector("#custom-results");
         const searchContainer = document.querySelector(".search-container");
-        
+
         // Get the number of search results
         const results = search.helper.lastResults;
         const hasResults = results && results.nbHits > 0;
@@ -373,7 +378,7 @@
                 <div class="hit-url"><a href="${hit.url}" target="_blank">${hit.url}</a></div>
                 <div>${hit.content}</div>
               </div>
-            `
+            `,
           ).join("");
           customContainer.style.display = "block";
           searchContainer.classList.add("hide-facets");
@@ -381,7 +386,7 @@
           hitsContainer.style.display = "block";
           customContainer.style.display = "none";
           searchContainer.classList.remove("hide-facets");
-          
+
           // Hide facets, sort, and pagination when there are no results
           if (!hasResults) {
             searchContainer.classList.add("no-results");
