@@ -3,22 +3,13 @@ This module cleanly deletes and recreates the typesense database in case it is n
 """
 
 
-import os
-
-from dotenv import load_dotenv
 import typesense
 
-load_dotenv()
+import client_setup
 
-client = typesense.Client({
-    'nodes': [{
-        'host': os.getenv("TYPESENSE_INTERNAL_HOST"),
-        'port': os.getenv("TYPESENSE_INTERNAL_PORT"),
-        'protocol': os.getenv("TYPESENSE_INTERNAL_PROTOCOL")
-    }],
-    'api_key': os.getenv("TYPESENSE_INTERNAL_API_KEY"),
-    'connection_timeout_seconds': 2
-})
+
+
+client = client_setup.send_info()
 
 
 def reset_collection():

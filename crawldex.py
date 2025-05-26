@@ -7,23 +7,12 @@ import os
 from io import BytesIO
 import time
 from urllib.parse import urlparse, urljoin
-from dotenv import load_dotenv
 import requests
 from bs4 import BeautifulSoup
-import typesense
 from PyPDF2 import PdfReader, errors
+import client_setup
 
-load_dotenv()
-
-client = typesense.Client({
-    'nodes': [{
-        'host': os.getenv("TYPESENSE_INTERNAL_HOST"),
-        'port': os.getenv("TYPESENSE_INTERNAL_PORT"),
-        'protocol': os.getenv("TYPESENSE_INTERNAL_PROTOCOL")
-    }],
-    'api_key': os.getenv("TYPESENSE_INTERNAL_API_KEY"),
-    'connection_timeout_seconds': 2
-})
+client = client_setup.send_info()
 
 
 def extract_content(url):
