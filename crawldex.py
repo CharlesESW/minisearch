@@ -25,31 +25,6 @@ client = typesense.Client({
     'connection_timeout_seconds': 2
 })
 
-def create_schema():
-    """This creates the database for the scraped data"""
-    try:
-        client.collections.create({
-            "name": "webpages",
-            "fields": [
-                {"name": "id", "type": "string"},
-                {"name": "url", "type": "string"},
-                {"name": "title", "type": "string", "sort": True},
-                {"name": "content", "type": "string"},
-                {"name": "domain", "type": "string", "facet": True},
-                {"name": "last_crawled", "type": "int64", "sort": True},
-                {"name": "path", "type": "string", "facet": True},
-                {"name": "word_count", "type": "int32", "sort": True},
-                {"name": "popularity", "type": "int32", "sort": True},
-                {"name": "headers", "type": "string[]", "optional": True},
-                {"name": "keywords", "type": "string[]", "optional": True},
-                {"name": "language", "type": "string", "facet": True},
-                {"name": "is_pdf", "type": "bool", "facet": True}
-            ],
-            "default_sorting_field": "popularity"
-        })
-        print("Collection schema created.")
-    except typesense.exceptions.ObjectAlreadyExists:
-        print("Schema already exists")
 
 def extract_content(url):
     """This extracts the contents of a given url"""
@@ -57,8 +32,7 @@ def extract_content(url):
         if url.startswith(("mailto:", "javascript:")):
             return None
 
-        headers = {'User-Agent': 'Mozilla/5.0'}
-        r = requests.get(url, headers=headers, timeout=10)
+        r = requests.get(url, headers={'User-Agent':'Mozilla/5.0'}, timeout=10)
         r.raise_for_status()
 
         content_type = r.headers.get('Content-Type', '')
@@ -210,17 +184,8 @@ def index_documents(docs_to_index):
     print(f"Indexing {len(docs_to_index)} documents...")
     client.collections['webpages'].documents.import_(docs_to_index, {'action': 'upsert'})
 
-def reset_collection():
-    """Delete and recreate the collection (won't be necessary once the schema stops changing)"""
-    try:
-        client.collections['webpages'].delete()
-        print("Collection deleted.")
-    except typesense.exceptions.ObjectNotFound as e:
-        print("Collection does not exist", e)
-    create_schema()
 
 if __name__ == "__main__":
-    reset_collection()
 
     seeds = os.getenv("SEARCH_DOMAINS").split(",")
 
